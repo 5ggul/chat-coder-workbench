@@ -1,0 +1,10 @@
+{
+  "name": "연락안했어요",
+  "short_name": "연락안했어요",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FAF7F5",
+  "theme_color": "#FAF7F5",
+  "description": "보내고 싶은 말은 다 보내세요. 아무에게도 가지 않으니까.",
+  "icons": []
+}
