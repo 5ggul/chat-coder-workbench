@@ -7,9 +7,7 @@
 import { RewardedAd, RewardedAdEventType, AdEventType, TestIds } from 'react-native-google-mobile-ads';
 
 export async function showRewardedAd(adUnitId?: string): Promise<boolean> {
-  const rewarded = RewardedAd.createForAdRequest(adUnitId || TestIds.REWARDED, {
-    requestNonPersonalizedAdsOnly: true,
-  });
+  const rewarded = RewardedAd.createForAdRequest(adUnitId || TestIds.REWARDED);
 
   return new Promise<boolean>((resolve) => {
     let settled = false;
