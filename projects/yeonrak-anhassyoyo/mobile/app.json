@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "연락안했어요",
+    "slug": "yeonrak-anhassyoyo",
+    "version": "0.2.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "yeonrakanhassyoyo",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yeonrakanhassyoyo.app"
+    },
+    "android": {
+      "package": "com.yeonrakanhassyoyo.app",
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#9B6471",
+          "defaultChannel": "sealed"
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
+      ]
+    ],
+    "extra": {
+      "privacyPolicyUrl": "https://example.com/privacy"
+    }
+  }
+}

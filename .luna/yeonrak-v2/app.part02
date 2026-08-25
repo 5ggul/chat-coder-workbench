@@ -1,0 +1,33 @@
+  return <Screen><Card style={styles.hero}><Text style={styles.heroKicker}>{selected ? `${selected.alias}에게 연락 안 한 지` : '연락 안 한 지'}</Text><Text style={styles.heroNumber}>{streak}<Text style={styles.heroUnit}>일</Text></Text><Text style={styles.heroCopy}>하고 싶은 말은 앱 안에서 끝내고, 실제 연락은 보내지 않습니다.</Text>{state.people.length > 1 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.personChips}>{state.people.map(p => <Pill key={p.id} label={`${p.alias} ${daysSince(p.lastActualContactAt)}일`} selected={p.id === selected?.id} onPress={() => selectPerson(p.id)} />)}</ScrollView>}</Card><PrimaryButton label="하고 싶은 말 보내기" onPress={onCompose} /><Pressable style={styles.crisisButton} onPress={onCrisis}><Text style={styles.crisisTitle}>지금 실제로 연락할 것 같아요</Text><Text style={styles.crisisSub}>90초 위기모드. 이 기능에는 광고를 넣지 않습니다.</Text></Pressable><View style={styles.metrics}><Metric value={week.fakeSends} label="이번 주 가짜 전송" /><Metric value={week.crisis} label="위기모드 완료" /><Metric value={localDefenseScore(state.activities)} label="로컬 방어점수" /></View><SectionTitle title="최근 7일 연락 충동" meta={week.changePercent === null ? '첫 주 기록 중' : `지난주 대비 ${week.changePercent > 0 ? '+' : ''}${week.changePercent}%`} /><Card><Bars values={trend} /></Card><SectionTitle title="연락 안 한 사람" meta="별명만 저장" /><Card>{state.people.map((p, i) => <View key={p.id} style={[styles.personRow, i > 0 && styles.divider]}><View><Text style={styles.personName}>{p.alias}</Text><Text style={styles.personMeta}>{p.relation}</Text></View><Text style={styles.personDays}>{daysSince(p.lastActualContactAt)}일</Text></View>)}<GhostButton label="상대 관리" onPress={onPeople} /></Card></Screen>;
+}
+
+function Compose({ onClose }: { onClose(): void }) {
+  const { state, fakeSend, sealMessage } = useStore();
+  const [personId, setPersonId] = useState(state.selectedPersonId ?? state.people[0]?.id ?? '');
+  const [emotion, setEmotion] = useState<Emotion>('보고 싶음');
+  const [body, setBody] = useState('');
+  const [sentId, setSentId] = useState<string | null>(null);
+  const selected = state.people.find(x => x.id === personId);
+  async function send() { if (!body.trim() || !personId) return; const id = await fakeSend(personId, emotion, body.trim()); setSentId(id); }
+  async function seal(hours: 24 | 168) { if (!sentId) return; await sealMessage(sentId, personId, emotion, body.trim(), hours); onClose(); }
+  if (sentId) return <Screen><View style={styles.result}><Text style={styles.resultEyebrow}>전송 연출 완료</Text><Text style={styles.resultTitle}>아무에게도 가지 않았어요</Text><Text style={styles.resultText}>{selected?.alias ?? '상대'}에게 보내고 싶었던 말은 실제로 전송되지 않았습니다. 지금 지우거나 잠시 봉인할 수 있어요.</Text></View><PrimaryButton label="24시간 봉인" onPress={() => seal(24)} /><Pressable style={styles.secondaryAction} onPress={() => seal(168)}><Text style={styles.secondaryActionText}>7일 봉인</Text></Pressable><GhostButton label="지금 삭제하고 끝내기" onPress={onClose} /></Screen>;
+  return <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><Screen><SectionTitle title="누구에게 하고 싶은 말인가요" /><View style={styles.pills}>{state.people.map(p => <Pill key={p.id} label={p.alias} selected={p.id === personId} onPress={() => setPersonId(p.id)} />)}</View><SectionTitle title="지금 감정" /><View style={styles.pills}>{EMOTIONS.map(x => <Pill key={x} label={x} selected={emotion === x} onPress={() => setEmotion(x)} />)}</View><Field label="하고 싶은 말"><TextInput value={body} onChangeText={setBody} multiline textAlignVertical="top" maxLength={2000} placeholder="여기에는 솔직하게 써도 괜찮아요." placeholderTextColor={palette.muted} style={styles.messageInput} /><Text style={styles.counter}>{body.length} / 2000 · 서버 저장 안 함</Text></Field><PrimaryButton label="보내기" disabled={!body.trim() || !personId} onPress={send} /></Screen></KeyboardAvoidingView>;
+}
+
+function Crisis({ onClose }: { onClose(): void }) {
+  const { state, completeCrisis } = useStore();
+  const [seconds, setSeconds] = useState(90);
+  const [body, setBody] = useState('');
+  const [done, setDone] = useState(false);
+  useEffect(() => { if (seconds <= 0 || done) return; const id = setInterval(() => setSeconds(s => Math.max(0, s - 1)), 1000); return () => clearInterval(id); }, [seconds, done]);
+  async function finish() { await completeCrisis(state.selectedPersonId, body); setDone(true); }
+  return <Screen><View style={styles.crisisClock}><Text style={styles.crisisClockLabel}>{done ? '위기모드 완료' : '지금은 보내지 않고 여기만 봐요'}</Text><Text style={styles.crisisClockValue}>{done ? '완료' : `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`}</Text></View>{!done ? <><TextInput value={body} onChangeText={setBody} multiline textAlignVertical="top" placeholder="지금 보내고 싶은 말을 그대로 적어도 됩니다." placeholderTextColor={palette.muted} style={styles.messageInput} /><PrimaryButton label={seconds === 0 ? '앱에만 남기고 끝내기' : '지금 끝내도 괜찮아요'} onPress={finish} /></> : <><Card><Text style={styles.resultText}>실제 연락 없이 한 번 넘겼습니다. 작성 내용은 서버로 가지 않았어요.</Text></Card><PrimaryButton label="돌아가기" onPress={onClose} /></>}</Screen>;
+}
+
+function Stats() {
+  const { state } = useStore();
+  const [range, setRange] = useState<30 | 90>(30);
+  const trend = trendBuckets(state.activities, range);
+  const emotions = emotionCounts(state.activities);
+  const week = weeklySummary(state.activities);
+  const maxEmotion = Math.max(1, ...emotions.map(x => x.count));

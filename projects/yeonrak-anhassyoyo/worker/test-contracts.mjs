@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const src = fs.readFileSync(new URL('./src/index.ts', import.meta.url), 'utf8');
+const sql = fs.readFileSync(new URL('./migrations/0001_init.sql', import.meta.url), 'utf8');
+assert.match(src, /fake_send: \{ points: 3, dailyCap: 1 \}/);
+assert.match(src, /crisis_complete: \{ points: 5, dailyCap: 2 \}/);
+assert.match(src, /seal_completed: \{ points: 20, dailyCap: 3 \}/);
+assert.match(src, /Authorization/);
+assert.match(src, /crypto\.subtle\.digest/);
+assert.match(src, /score_periods/);
+assert.doesNotMatch(sql, /(?:message|body)\s+(?:TEXT|BLOB)/i, 'message bodies must not be persisted in D1');
+for (const table of ['users', 'install_tokens', 'events', 'daily_event_counts', 'seals', 'score_periods']) assert.match(sql, new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`));
+console.log('worker contracts ok');

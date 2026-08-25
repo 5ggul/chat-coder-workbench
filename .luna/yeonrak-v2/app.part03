@@ -1,0 +1,24 @@
+  return <Screen><View style={styles.rangeToggle}><Pill label="30일" selected={range === 30} onPress={() => setRange(30)} /><Pill label="90일" selected={range === 90} onPress={() => setRange(90)} /></View><SectionTitle title={`${range}일 연락 충동`} meta={`${trend.reduce((a, b) => a + b, 0)}회`} /><Card><Bars values={trend} height={130} /></Card><SectionTitle title="감정 패턴" /><Card>{emotions.map((x, i) => <View key={x.emotion} style={[styles.emotionRow, i > 0 && styles.divider]}><Text style={styles.emotionLabel}>{x.emotion}</Text><View style={styles.emotionTrack}><View style={[styles.emotionFill, { width: `${Math.max(4, x.count / maxEmotion * 100)}%` }]} /></View><Text style={styles.emotionCount}>{x.count}</Text></View>)}</Card><SectionTitle title="이번 주 리포트" /><Card><View style={styles.metrics}><Metric value={week.currentTotal} label="충동 기록" /><Metric value={week.fakeSends} label="가짜 전송" /><Metric value={week.crisis} label="위기 완료" /></View><Text style={styles.reportText}>{week.changePercent === null ? '지난주 데이터가 아직 부족합니다.' : `지난주보다 연락 충동 기록이 ${Math.abs(week.changePercent)}% ${week.changePercent <= 0 ? '줄었습니다.' : '늘었습니다.'}`}</Text></Card></Screen>;
+}
+
+function Ranking() {
+  const { serverReady } = useStore();
+  const [scope, setScope] = useState<'weekly' | 'season'>('weekly');
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [me, setMe] = useState<LeaderboardEntry | undefined>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => { if (!serverReady) return; setLoading(true); setError(''); fetchLeaderboard(scope).then(x => { setEntries(x.entries); setMe(x.me); }).catch(() => setError('랭킹 서버를 불러오지 못했습니다.')).finally(() => setLoading(false)); }, [scope, serverReady]);
+  return <Screen><View style={styles.rangeToggle}><Pill label="주간" selected={scope === 'weekly'} onPress={() => setScope('weekly')} /><Pill label="이번 달 시즌" selected={scope === 'season'} onPress={() => setScope('season')} /></View>{!serverReady ? <Card><Text style={styles.emptyTitle}>랭킹 서버 연결 전입니다</Text><Text style={styles.emptyText}>Cloudflare Worker 주소를 EXPO_PUBLIC_API_BASE_URL에 넣으면 실제 사용자 랭킹이 표시됩니다. 샘플 사용자나 가짜 순위는 넣지 않습니다.</Text></Card> : loading ? <ActivityIndicator color={palette.roseDark} /> : error ? <Card><Text style={styles.emptyText}>{error}</Text></Card> : <Card>{entries.map((entry, i) => <View key={`${entry.rank}-${entry.nickname}`} style={[styles.rankRow, i > 0 && styles.divider]}><Text style={styles.rankNo}>{entry.rank}</Text><View style={{ flex: 1 }}><Text style={styles.rankName}>{entry.nickname}</Text></View><Text style={styles.rankScore}>{entry.score.toLocaleString()}</Text></View>)}</Card>}{me && <Card><Text style={styles.myRank}>내 순위 {me.rank}위 · {me.score.toLocaleString()}점</Text></Card>}<Card><Text style={styles.ruleTitle}>랭킹 점수는 서버에서 계산합니다</Text><Text style={styles.ruleText}>가짜 전송 횟수를 무한 반복해도 점수가 쌓이지 않도록 하루 상한을 두고, 위기모드 완료와 실제 봉인 시간 경과 같은 이벤트만 서버가 검증해 반영합니다.</Text></Card></Screen>;
+}
+
+function Profile({ onPeople }: { onPeople(): void }) {
+  const { state, setNickname, setEveningReminder, serverReady } = useStore();
+  const [nickname, setLocalNickname] = useState(state.nickname);
+  return <Screen><SectionTitle title="프로필" /><Card><Field label="랭킹 닉네임"><TextInput value={nickname} onChangeText={setLocalNickname} style={styles.input} maxLength={14} /><PrimaryButton label="닉네임 저장" onPress={() => setNickname(nickname)} /></Field></Card><SectionTitle title="설정" /><Card><View style={styles.settingRow}><View style={{ flex: 1 }}><Text style={styles.settingTitle}>저녁 기록 알림</Text><Text style={styles.settingText}>매일 한 번, 앱을 다시 열어볼 수 있도록 로컬 알림을 예약합니다.</Text></View><Switch value={state.settings.eveningReminderEnabled} onValueChange={setEveningReminder} trackColor={{ false: palette.line, true: palette.roseSoft }} thumbColor={palette.roseDark} /></View><View style={styles.divider} /><Pressable onPress={onPeople} style={styles.settingPress}><Text style={styles.settingTitle}>상대 관리</Text><Text style={styles.settingText}>{state.people.length}명 기록 중</Text></Pressable></Card><SectionTitle title="개인정보 원칙" /><Card><Text style={styles.ruleText}>실제 연락처 권한을 요청하지 않습니다. 메시지 원문과 봉인 메시지는 기기에만 저장합니다. 랭킹 서버에는 익명 사용자 ID, 닉네임, 이벤트 종류와 점수 계산에 필요한 최소 데이터만 저장합니다.</Text><Text style={styles.serverBadge}>{serverReady ? '익명 서버 연결 상태' : '현재 개인 기록 모드'}</Text></Card></Screen>;
+}
+
+function People({ onClose }: { onClose(): void }) {
+  const { state, addPerson, deletePerson, markActualContactNow, selectPerson } = useStore();
+  const [alias, setAlias] = useState(''); const [relation, setRelation] = useState<Relation>('전 연인'); const [days, setDays] = useState('0');
+  async function add() { if (!alias.trim()) return; await addPerson(alias, relation, Number(days || 0)); setAlias(''); setDays('0'); }

@@ -1,0 +1,67 @@
+name: mission-yeonrak-v2-04dc22ba
+
+on:
+  push:
+    branches:
+      - app/yeonrak-anhassyoyo-v2
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mission-yeonrak-v2-04dc22ba
+  cancel-in-progress: false
+
+jobs:
+  verify-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact mission state
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            projects/yeonrak-anhassyoyo/mobile/package.json
+            projects/yeonrak-anhassyoyo/worker/package.json
+
+      - name: Verify base and assemble App.tsx
+        env:
+          EXPECTED_BASE: db7dbaa961c31a64ef5e5f27d5d430915fb6f263
+          EXPECTED_APP_SHA256: caa6097772154fb0fed7cd041eb3e6a0afeb91a7879d20362ee1dbaa8ba6ba69
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE"
+          cat .luna/yeonrak-v2/app.part01 .luna/yeonrak-v2/app.part02 .luna/yeonrak-v2/app.part03 .luna/yeonrak-v2/app.part04 .luna/yeonrak-v2/app.part05 > projects/yeonrak-anhassyoyo/mobile/App.tsx
+          echo "$EXPECTED_APP_SHA256  projects/yeonrak-anhassyoyo/mobile/App.tsx" | sha256sum -c -
+
+      - name: Install and verify mobile app
+        working-directory: projects/yeonrak-anhassyoyo/mobile
+        run: |
+          npm install
+          npm run typecheck
+          npx expo-doctor
+          node test-contracts.mjs
+
+      - name: Install and verify Worker
+        working-directory: projects/yeonrak-anhassyoyo/worker
+        run: |
+          npm install
+          npm run check
+
+      - name: Publish verified source
+        run: |
+          set -euo pipefail
+          rm -rf .luna/yeonrak-v2
+          rm -f .github/workflows/mission-yeonrak-v2-04dc22ba.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Build native app and ranking backend"
+          git push origin HEAD:app/yeonrak-anhassyoyo-v2
