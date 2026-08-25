@@ -1,1 +1,26 @@
-const fs=require('fs');const assert=require('assert');const html=fs.readFileSync('index.html','utf8');const css=fs.readFileSync('styles.css','utf8');const js=fs.readFileSync('app.js','utf8');assert(html.includes('연락안했어요'));assert(html.includes('data-tab="ranking"'));assert(js.includes('analysisUnlockedUntil'));assert(js.includes('fakeSend'));assert(js.includes('localStorage'));assert(!html.includes('😀'));assert(css.includes('--rose:#cf7186'));console.log('prototype checks passed');
+const fs = require('fs');
+const assert = require('assert');
+const html = fs.readFileSync('index.html','utf8');
+const css = fs.readFileSync('styles.css','utf8');
+const js = fs.readFileSync('app.js','utf8');
+const ads = fs.readFileSync('ads.js','utf8');
+
+assert(html.includes('연락안했어요'));
+assert(html.includes('data-tab="ranking"'));
+assert(html.includes('./ads.js'));
+assert(js.includes('startCrisisMode'));
+assert(js.includes('renderVault'));
+assert(js.includes('renderWeeklyReport'));
+assert(js.includes("statsWindow: 30"));
+assert(js.includes("rankingMode: 'weekly'"));
+assert(js.includes("data-reward=\"history90\""));
+assert(js.includes('showRewarded'));
+assert(js.includes('localStorage'));
+assert(ads.includes('YEONRAK_NATIVE_ADS'));
+assert(ads.includes('showRewarded'));
+assert(!html.includes('😀'));
+assert(!js.includes('😀'));
+assert(css.includes('--rose: #cf7186'));
+assert(css.includes('.crisis-overlay'));
+assert(css.includes('.season-banner'));
+console.log('v1 engagement checks passed');
