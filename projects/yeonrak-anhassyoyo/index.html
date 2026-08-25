@@ -12,19 +12,43 @@
 <body>
   <div id="app" class="app-shell">
     <header class="topbar">
-      <div><p class="eyebrow">연락안했어요</p><h1 id="screenTitle">오늘도 잘 참았어요</h1></div>
-      <button class="icon-button" id="settingsBtn" aria-label="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.9 1.9-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.55V20h-2.68v-.08a1.7 1.7 0 0 0-1.03-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-1.9-1.9.06-.06A1.7 1.7 0 0 0 7.8 15a1.7 1.7 0 0 0-1.55-1.03h-.08v-2.68h.08A1.7 1.7 0 0 0 7.8 10.26a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.9-1.9.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.55V5.2h2.68v.08a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.9 1.9-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.55 1.03h.08v2.68h-.08A1.7 1.7 0 0 0 19.4 15Z"/></svg></button>
+      <div>
+        <p class="eyebrow">연락안했어요</p>
+        <h1 id="screenTitle">오늘도 잘 참았어요</h1>
+      </div>
+      <button class="icon-button" id="settingsBtn" aria-label="설정">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.9 1.9-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.55V20h-2.68v-.08a1.7 1.7 0 0 0-1.03-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-1.9-1.9.06-.06A1.7 1.7 0 0 0 7.8 15a1.7 1.7 0 0 0-1.55-1.03h-.08v-2.68h.08A1.7 1.7 0 0 0 7.8 10.26a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.9-1.9.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.55V5.2h2.68v.08a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.9 1.9-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.55 1.03h.08v2.68h-.08A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+      </button>
     </header>
+
     <main id="screen" class="screen"></main>
+
     <nav class="bottom-nav" aria-label="주요 메뉴">
-      <button class="nav-item is-active" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11.4 12 4l9 7.4V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.6Z"/></svg><span>홈</span></button>
-      <button class="nav-item" data-tab="compose"><svg viewBox="0 0 24 24"><path d="m4 4 16 8-16 8 3-8-3-8Z"/><path d="M7 12h13"/></svg><span>보내기</span></button>
-      <button class="nav-item" data-tab="stats"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg><span>기록</span></button>
-      <button class="nav-item" data-tab="ranking"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H3v1a4 4 0 0 0 4 4M17 6h4v1a4 4 0 0 1-4 4"/></svg><span>랭킹</span></button>
-      <button class="nav-item" data-tab="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>MY</span></button>
+      <button class="nav-item is-active" data-tab="home" aria-label="홈">
+        <svg viewBox="0 0 24 24"><path d="M3 11.4 12 4l9 7.4V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.6Z"/></svg>
+        <span>홈</span>
+      </button>
+      <button class="nav-item" data-tab="compose" aria-label="보내기">
+        <svg viewBox="0 0 24 24"><path d="m4 4 16 8-16 8 3-8-3-8Z"/><path d="M7 12h13"/></svg>
+        <span>보내기</span>
+      </button>
+      <button class="nav-item" data-tab="stats" aria-label="기록">
+        <svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+        <span>기록</span>
+      </button>
+      <button class="nav-item" data-tab="ranking" aria-label="랭킹">
+        <svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H3v1a4 4 0 0 0 4 4M17 6h4v1a4 4 0 0 1-4 4"/></svg>
+        <span>랭킹</span>
+      </button>
+      <button class="nav-item" data-tab="profile" aria-label="내 정보">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span>MY</span>
+      </button>
     </nav>
   </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./ads.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
