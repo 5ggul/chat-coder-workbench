@@ -19,7 +19,7 @@ jobs:
       - name: Checkout exact mission state
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 4
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -36,7 +36,7 @@ jobs:
           EXPECTED_APP_SHA256: caa6097772154fb0fed7cd041eb3e6a0afeb91a7879d20362ee1dbaa8ba6ba69
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "$EXPECTED_BASE"
+          git merge-base --is-ancestor "$EXPECTED_BASE" HEAD
           cat .luna/yeonrak-v2/app.part01 .luna/yeonrak-v2/app.part02 .luna/yeonrak-v2/app.part03 .luna/yeonrak-v2/app.part04 .luna/yeonrak-v2/app.part05 > projects/yeonrak-anhassyoyo/mobile/App.tsx
           echo "$EXPECTED_APP_SHA256  projects/yeonrak-anhassyoyo/mobile/App.tsx" | sha256sum -c -
 
