@@ -16,6 +16,7 @@ assert(js.includes("rankingMode: 'weekly'"));
 assert(js.includes("data-reward=\"history90\""));
 assert(js.includes('showRewarded'));
 assert(js.includes('localStorage'));
+assert(js.includes("escapeHtml(item.text)"));
 assert(ads.includes('YEONRAK_NATIVE_ADS'));
 assert(ads.includes('showRewarded'));
 assert(!html.includes('😀'));
