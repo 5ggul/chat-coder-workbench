@@ -4,6 +4,7 @@ const html = fs.readFileSync('index.html','utf8');
 const css = fs.readFileSync('styles.css','utf8');
 const js = fs.readFileSync('app.js','utf8');
 const ads = fs.readFileSync('ads.js','utf8');
+const nativeAds = fs.readFileSync('native-rewarded-adapter.ts','utf8');
 
 assert(html.includes('연락안했어요'));
 assert(html.includes('data-tab="ranking"'));
@@ -19,6 +20,10 @@ assert(js.includes('localStorage'));
 assert(js.includes("escapeHtml(item.text)"));
 assert(ads.includes('YEONRAK_NATIVE_ADS'));
 assert(ads.includes('showRewarded'));
+assert(nativeAds.includes('RewardedAd.createForAdRequest'));
+assert(nativeAds.includes('RewardedAdEventType.EARNED_REWARD'));
+assert(nativeAds.includes('AdEventType.CLOSED'));
+assert(!nativeAds.includes('requestNonPersonalizedAdsOnly'));
 assert(!html.includes('😀'));
 assert(!js.includes('😀'));
 assert(css.includes('--rose: #cf7186'));
