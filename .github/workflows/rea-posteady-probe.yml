@@ -46,28 +46,17 @@ jobs:
                   if matches: f.write(matches[0]["id"]+"\t"+name+"\t"+matches[0]["url"]+"\n")
           print("Matched public targets:",open("evidence/selected-targets.tsv").read())
           PY
-          cat > /tmp/rea-reload.mjs <<'NODE'
-          const tabs=await fetch("http://127.0.0.1:9222/json/list").then(r=>r.json());
-          const tab=tabs.find(t=>t.id===process.env.TARGET_ID);
-          if(!tab){process.exit(2)}
-          const ws=new WebSocket(tab.webSocketDebuggerUrl);
-          await new Promise((resolve,reject)=>{
-            const timer=setTimeout(()=>reject(new Error("reload timeout")),7000);
-            ws.addEventListener("open",()=>{ws.send(JSON.stringify({id:42,method:"Page.reload",params:{ignoreCache:true}}));setTimeout(()=>{ws.close();clearTimeout(timer);resolve()},1000)},{once:true});
-            ws.addEventListener("error",e=>{clearTimeout(timer);reject(new Error("CDP websocket error"))},{once:true});
-          });
-          NODE
+          sleep 5
+          set +e
           while IFS=$'\t' read -r target label page_url; do
-            echo "REA inspecting $label ($page_url)"
-            rea inspect-web-page http://127.0.0.1:9222 "$target" --observation-ms 10000 --include-accessibility-text --include-json-body-shapes --json > "evidence/$label.json" 2>"evidence/$label.err" &
-            REA_PID=$!
-            sleep 3
-            TARGET_ID="$target" node /tmp/rea-reload.mjs >>"evidence/$label.err" 2>&1 || true
-            wait "$REA_PID"; capture_status=$?; echo "exit=$capture_status" >>"evidence/$label.err"
-            du -h "evidence/$label.json"
-            rea inspect-web-page http://127.0.0.1:9222 "$target" --observation-ms 300 --include-script-sources --format json >"evidence/$label-scripts.json" 2>"evidence/$label-scripts.err" || true
-            rea analyze-web-bundle http://127.0.0.1:9222 "$target" --observation-ms 2000 --format json >"evidence/$label-bundle.json" 2>"evidence/$label-bundle.err" || true
+            echo "REA scanning stable target $label ($page_url)"
+            rea analyze-web-bundle http://127.0.0.1:9222 "$target" --observation-ms 1500 --format json >"evidence/$label-bundle.json" 2>"evidence/$label-bundle.err"
+            echo "bundle_exit=$?" >>"evidence/$label-bundle.err"
+            rea inspect-web-page http://127.0.0.1:9222 "$target" --observation-ms 1200 --include-accessibility-text --include-console-text --include-script-sources --include-json-body-shapes --format json >"evidence/$label.json" 2>"evidence/$label.err"
+            echo "inspect_exit=$?" >>"evidence/$label.err"
+            du -h "evidence/$label.json" "evidence/$label-bundle.json"
           done < evidence/selected-targets.tsv
+          set -e
           python3 - <<'PY'
           import json,os,re
           out=[]
