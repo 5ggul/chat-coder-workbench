@@ -59,12 +59,13 @@ jobs:
           NODE
           while IFS=$'\t' read -r target label page_url; do
             echo "REA inspecting $label ($page_url)"
-            rea inspect-web-page http://127.0.0.1:9222 "$target" --observation-ms 10000 --include-accessibility-text --include-json-body-shapes --include-script-sources --json > "evidence/$label.json" 2>"evidence/$label.err" &
+            rea inspect-web-page http://127.0.0.1:9222 "$target" --observation-ms 10000 --include-accessibility-text --include-json-body-shapes --json > "evidence/$label.json" 2>"evidence/$label.err" &
             REA_PID=$!
             sleep 3
             TARGET_ID="$target" node /tmp/rea-reload.mjs >>"evidence/$label.err" 2>&1 || true
-            wait "$REA_PID"; echo "exit=$?" >>"evidence/$label.err"
+            wait "$REA_PID"; capture_status=$?; echo "exit=$capture_status" >>"evidence/$label.err"
             du -h "evidence/$label.json"
+            rea inspect-web-page http://127.0.0.1:9222 "$target" --observation-ms 300 --include-script-sources --format json >"evidence/$label-scripts.json" 2>"evidence/$label-scripts.err" || true
             rea analyze-web-bundle http://127.0.0.1:9222 "$target" --observation-ms 2000 --format json >"evidence/$label-bundle.json" 2>"evidence/$label-bundle.err" || true
           done < evidence/selected-targets.tsv
           python3 - <<'PY'
