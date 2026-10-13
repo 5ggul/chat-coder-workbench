@@ -1,0 +1,99 @@
+name: REA Posteady public browser probe
+on:
+  push:
+    branches: [rea-posteady-probe-20261014]
+permissions:
+  contents: read
+jobs:
+  rea-public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Set up supported Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Run REA against public pages
+        shell: bash
+        run: |
+          set -u
+          mkdir -p evidence
+          node -v | tee evidence/node-version.txt
+          npm install -g rea-agents@6.4.0 --no-fund --no-audit > evidence/npm.log 2>&1
+          if [ $? -ne 0 ]; then cat evidence/npm.log | tail -30; exit 1; fi
+          rea --version > evidence/rea-version.txt 2>&1 || true
+          rea inspect-web-page --help > evidence/inspect-help.txt 2>&1 || true
+          rea analyze-web-bundle --help > evidence/bundle-help.txt 2>&1 || true
+          CHROME="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || true)"
+          echo "$CHROME" > evidence/chrome-path.txt
+          if [ -z "$CHROME" ]; then echo "Chrome unavailable"; exit 2; fi
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --disable-background-networking --no-first-run --remote-debugging-port=9222 --user-data-dir=/tmp/rea-posteady-probe https://www.posteady.com/ko https://www.posteady.com/ko/features/content-discovery https://www.posteady.com/ko/features/ai-content https://www.posteady.com/ko/features/multi-channel-scheduler > evidence/chrome.log 2>&1 &
+          CHROME_PID=$!
+          trap 'kill "$CHROME_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:9222/json/list > evidence/cdp-tabs.json && break; sleep 1; done
+          rea list-browser-targets http://127.0.0.1:9222 --json > evidence/rea-targets.json 2>evidence/rea-targets-error.log || true
+          python3 - <<'PY'
+          import json
+          try: tabs=json.load(open("evidence/cdp-tabs.json"))
+          except Exception as e:
+              print("CDP_ERROR",str(e));raise
+          slugs=[("/ko/features/content-discovery","discovery"),("/ko/features/ai-content","generator"),("/ko/features/multi-channel-scheduler","scheduler"),("/ko","homepage")]
+          with open("evidence/selected-targets.tsv","w") as f:
+              for path,name in slugs:
+                  matches=[x for x in tabs if x.get("type")=="page" and x.get("url","").split("?")[0].rstrip("/").endswith(path)]
+                  if matches: f.write(matches[0]["id"]+"\t"+name+"\t"+matches[0]["url"]+"\n")
+          print("Matched public targets:",open("evidence/selected-targets.tsv").read())
+          PY
+          cat > /tmp/rea-reload.mjs <<'NODE'
+          const tabs=await fetch("http://127.0.0.1:9222/json/list").then(r=>r.json());
+          const tab=tabs.find(t=>t.id===process.env.TARGET_ID);
+          if(!tab){process.exit(2)}
+          const ws=new WebSocket(tab.webSocketDebuggerUrl);
+          await new Promise((resolve,reject)=>{
+            const timer=setTimeout(()=>reject(new Error("reload timeout")),7000);
+            ws.addEventListener("open",()=>{ws.send(JSON.stringify({id:42,method:"Page.reload",params:{ignoreCache:true}}));setTimeout(()=>{ws.close();clearTimeout(timer);resolve()},1000)},{once:true});
+            ws.addEventListener("error",e=>{clearTimeout(timer);reject(new Error("CDP websocket error"))},{once:true});
+          });
+          NODE
+          while IFS=$'\t' read -r target label page_url; do
+            echo "REA inspecting $label ($page_url)"
+            rea inspect-web-page http://127.0.0.1:9222 "$target" --observation-ms 10000 --include-accessibility-text --include-json-body-shapes --include-script-sources --json > "evidence/$label.json" 2>"evidence/$label.err" &
+            REA_PID=$!
+            sleep 3
+            TARGET_ID="$target" node /tmp/rea-reload.mjs >>"evidence/$label.err" 2>&1 || true
+            wait "$REA_PID"; echo "exit=$?" >>"evidence/$label.err"
+            du -h "evidence/$label.json"
+          done < evidence/selected-targets.tsv
+          python3 - <<'PY'
+          import json,os,re
+          out=[]
+          for label in ["homepage","discovery","generator","scheduler"]:
+              p=f"evidence/{label}.json"
+              if not os.path.exists(p):continue
+              raw=open(p,errors="replace").read()
+              try: obj=json.loads(raw)
+              except Exception as e:
+                  out.append({"page":label,"error":"invalid JSON","detail":str(e),"tail":raw[-200:]})
+                  continue
+              flat=[]
+              def walk(x,path="",depth=0):
+                  if depth>15 or len(flat)>20000:return
+                  if isinstance(x,dict):
+                      for k,v in x.items():
+                          if isinstance(v,str) and (k.lower().endswith("url") or k.lower() in ("method","status","src","type","initiator")):
+                              flat.append({"at":path+"/"+k,"value":v[:250]})
+                          elif isinstance(v,(dict,list)):walk(v,path+"/"+k,depth+1)
+                  elif isinstance(x,list):
+                      for i,v in enumerate(x[:300]):walk(v,path+"/"+str(i),depth+1)
+              walk(obj)
+              out.append({"page":label,"bytes":len(raw),"keys":list(obj)[:30] if isinstance(obj,dict) else [],"signals":flat[:180]})
+          open("evidence/summary.json","w").write(json.dumps(out,ensure_ascii=False,indent=2))
+          print(json.dumps(out,ensure_ascii=False,indent=2)[:20000])
+          PY
+      - name: Upload only public inspection evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rea-posteady-public-evidence
+          path: evidence/
+          retention-days: 2
